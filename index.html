@@ -6,7 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0F172A" />
     <title>Электро - Учёт электроэнергии</title>
-    <script type="module" crossorigin src="/electro/assets/index-BOi9r7Qq.js"></script>
+    <!-- GitHub Pages SPA redirect handler -->
+    <script>
+      (function(l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search.slice(1).split('&').map(function(s) {
+            return s.replace(/~and~/g, '&')
+          }).join('?');
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      }(window.location))
+    </script>
+    <script type="module" crossorigin src="/electro/assets/index-CFDnxTl3.js"></script>
     <link rel="stylesheet" crossorigin href="/electro/assets/index-DKhF8VRY.css">
   </head>
   <body>
