@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, PenLine, History, BarChart3, Settings } from 'lucide-react'
+import { LayoutDashboard, Zap, Droplets, Flame, Settings } from 'lucide-react'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Дашборд' },
-  { to: '/readings', icon: PenLine, label: 'Ввод' },
-  { to: '/history', icon: History, label: 'История' },
-  { to: '/analytics', icon: BarChart3, label: 'Анализ' },
-  { to: '/settings', icon: Settings, label: 'Ещё' },
+  { to: '/electricity', icon: Zap, label: 'Электро' },
+  { to: '/water', icon: Droplets, label: 'Вода' },
+  { to: '/gas', icon: Flame, label: 'Газ' },
+  { to: '/settings', icon: Settings, label: 'Настройки' },
 ]
 
 export default function BottomNav() {
@@ -18,10 +18,8 @@ export default function BottomNav() {
             key={to}
             to={to}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-[11px] font-medium min-w-[56px] transition-all duration-200 ${
-                isActive
-                  ? 'text-electric-500'
-                  : 'text-muted'
+              `flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-[10px] font-medium min-w-[52px] transition-all duration-200 ${
+                isActive ? 'text-electric-500' : 'text-muted'
               }`
             }
           >

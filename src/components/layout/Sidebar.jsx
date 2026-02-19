@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, PenLine, History, BarChart3, Settings, Zap } from 'lucide-react'
+import { LayoutDashboard, Zap, Droplets, Flame, Settings, Gauge } from 'lucide-react'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Дашборд' },
-  { to: '/readings', icon: PenLine, label: 'Показания' },
-  { to: '/history', icon: History, label: 'История' },
-  { to: '/analytics', icon: BarChart3, label: 'Аналитика' },
+  { to: '/electricity', icon: Zap, label: 'Электроэнергия' },
+  { to: '/water', icon: Droplets, label: 'Вода' },
+  { to: '/gas', icon: Flame, label: 'Газ' },
   { to: '/settings', icon: Settings, label: 'Настройки' },
 ]
 
@@ -14,11 +14,11 @@ export default function Sidebar() {
     <aside className="hidden lg:flex w-64 flex-col bg-secondary border-r border-themed h-screen sticky top-0">
       <div className="flex items-center gap-3 px-6 py-5 border-b border-themed">
         <div className="w-9 h-9 rounded-xl bg-electric-500/10 flex items-center justify-center">
-          <Zap className="w-5 h-5 text-electric-500" />
+          <Gauge className="w-5 h-5 text-electric-500" />
         </div>
         <div>
-          <span className="text-lg font-bold text-primary">Электро</span>
-          <p className="text-xs text-muted">Учёт энергии</p>
+          <span className="text-lg font-bold text-primary">Счётчики</span>
+          <p className="text-xs text-muted">Учёт ресурсов</p>
         </div>
       </div>
 
@@ -42,7 +42,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="px-4 py-4 border-t border-themed">
-        <p className="text-xs text-muted text-center">v1.0.0</p>
+        <p className="text-xs text-muted text-center">v2.0.0</p>
       </div>
     </aside>
   )

@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Sun, Moon, Monitor, Save, Download, Upload, Trash2, AlertCircle, Check, Zap, Gauge } from 'lucide-react'
+import { Sun, Moon, Monitor, Save, Download, Upload, Trash2, AlertCircle, Check, Zap, Gauge, Droplets, Flame, Thermometer } from 'lucide-react'
 import useSettingsStore from '../store/useSettingsStore'
 import useReadingsStore from '../store/useReadingsStore'
+import useWaterStore from '../store/useWaterStore'
+import useGasStore from '../store/useGasStore'
 import { exportToJSON, importFromJSON } from '../utils/export'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -18,9 +20,27 @@ export default function SettingsPage() {
   const clearReadings = useReadingsStore(s => s.clearReadings)
   const importSettings = useSettingsStore(s => s.importSettings)
 
+  const waterTariff = useWaterStore(s => s.tariff)
+  const waterTariffHistory = useWaterStore(s => s.tariffHistory)
+  const updateWaterTariff = useWaterStore(s => s.updateTariff)
+  const clearWaterReadings = useWaterStore(s => s.clearReadings)
+
+  const gasTariff = useGasStore(s => s.tariff)
+  const gasTariffHistory = useGasStore(s => s.tariffHistory)
+  const updateGasTariff = useGasStore(s => s.updateTariff)
+  const clearGasReadings = useGasStore(s => s.clearReadings)
+
   const [t1Rate, setT1Rate] = useState(String(currentTariff.t1Rate))
   const [t2Rate, setT2Rate] = useState(String(currentTariff.t2Rate))
   const [tariffSaved, setTariffSaved] = useState(false)
+
+  const [coldRate, setColdRate] = useState(String(waterTariff.coldRate))
+  const [hotRate, setHotRate] = useState(String(waterTariff.hotRate))
+  const [waterTariffSaved, setWaterTariffSaved] = useState(false)
+
+  const [gasRate, setGasRate] = useState(String(gasTariff.rate))
+  const [gasTariffSaved, setGasTariffSaved] = useState(false)
+
   const [showClear, setShowClear] = useState(false)
   const [importMsg, setImportMsg] = useState('')
   const fileRef = useRef(null)
@@ -40,6 +60,23 @@ export default function SettingsPage() {
     }
     setTariffSaved(true)
     setTimeout(() => setTariffSaved(false), 2000)
+  }
+
+  const handleWaterTariffSave = () => {
+    const cold = parseFloat(coldRate)
+    const hot = parseFloat(hotRate)
+    if (isNaN(cold) || cold < 0 || isNaN(hot) || hot < 0) return
+    updateWaterTariff(cold, hot)
+    setWaterTariffSaved(true)
+    setTimeout(() => setWaterTariffSaved(false), 2000)
+  }
+
+  const handleGasTariffSave = () => {
+    const rate = parseFloat(gasRate)
+    if (isNaN(rate) || rate < 0) return
+    updateGasTariff(rate)
+    setGasTariffSaved(true)
+    setTimeout(() => setGasTariffSaved(false), 2000)
   }
 
   const handleExport = () => {
@@ -68,6 +105,8 @@ export default function SettingsPage() {
 
   const handleClear = () => {
     clearReadings()
+    clearWaterReadings()
+    clearGasReadings()
     setShowClear(false)
   }
 
@@ -197,6 +236,86 @@ export default function SettingsPage() {
         )}
       </Card>
 
+      {/* Water Tariff */}
+      <Card className="p-5">
+        <h3 className="text-sm font-semibold text-primary mb-3">Тарифы — Вода</h3>
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label className="flex items-center gap-1.5 text-xs text-muted mb-1.5">
+              <Droplets className="w-3.5 h-3.5 text-blue-400" /> ХВС, {CURRENCY}/м³
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={coldRate}
+              onChange={e => setColdRate(e.target.value)}
+              className="w-full bg-tertiary border border-themed rounded-xl px-3 py-2.5 font-mono text-primary focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none"
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-1.5 text-xs text-muted mb-1.5">
+              <Thermometer className="w-3.5 h-3.5 text-orange-400" /> ГВС, {CURRENCY}/м³
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={hotRate}
+              onChange={e => setHotRate(e.target.value)}
+              className="w-full bg-tertiary border border-themed rounded-xl px-3 py-2.5 font-mono text-primary focus:border-orange-400 focus:ring-1 focus:ring-orange-400 outline-none"
+            />
+          </div>
+        </div>
+        <Button onClick={handleWaterTariffSave} size="sm">
+          {waterTariffSaved ? <><Check className="w-4 h-4" /> Сохранено</> : <><Save className="w-4 h-4" /> Сохранить</>}
+        </Button>
+        {waterTariffHistory.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-themed">
+            <p className="text-xs text-muted mb-2">История тарифов</p>
+            <div className="space-y-1">
+              {waterTariffHistory.slice(-3).reverse().map(p => (
+                <div key={p.id} className="flex items-center justify-between text-xs">
+                  <span className="text-secondary">{p.startDate}</span>
+                  <span className="font-mono text-primary">ХВС: {p.coldRate} / ГВС: {p.hotRate}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Gas Tariff */}
+      <Card className="p-5">
+        <h3 className="text-sm font-semibold text-primary mb-3">Тариф — Газ</h3>
+        <div className="mb-4">
+          <label className="flex items-center gap-1.5 text-xs text-muted mb-1.5">
+            <Flame className="w-3.5 h-3.5 text-orange-500" /> Тариф, {CURRENCY}/м³
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            value={gasRate}
+            onChange={e => setGasRate(e.target.value)}
+            className="w-full bg-tertiary border border-themed rounded-xl px-3 py-2.5 font-mono text-primary focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none"
+          />
+        </div>
+        <Button onClick={handleGasTariffSave} size="sm">
+          {gasTariffSaved ? <><Check className="w-4 h-4" /> Сохранено</> : <><Save className="w-4 h-4" /> Сохранить</>}
+        </Button>
+        {gasTariffHistory.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-themed">
+            <p className="text-xs text-muted mb-2">История тарифов</p>
+            <div className="space-y-1">
+              {gasTariffHistory.slice(-3).reverse().map(p => (
+                <div key={p.id} className="flex items-center justify-between text-xs">
+                  <span className="text-secondary">{p.startDate}</span>
+                  <span className="font-mono text-primary">{p.rate} {CURRENCY}/м³</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+
       {/* Data Management */}
       <Card className="p-5">
         <h3 className="text-sm font-semibold text-primary mb-3">Данные</h3>
@@ -240,8 +359,8 @@ export default function SettingsPage() {
             <Zap className="w-5 h-5 text-electric-500" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-primary">Электро</h3>
-            <p className="text-xs text-muted">Версия 1.0.0</p>
+            <h3 className="text-sm font-semibold text-primary">Счётчики</h3>
+            <p className="text-xs text-muted">Версия 2.0.0</p>
           </div>
         </div>
         <p className="text-xs text-secondary">
