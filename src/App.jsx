@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
 import ResourceLayout from './components/layout/ResourceLayout'
@@ -14,16 +13,9 @@ import GasReadingsPage from './pages/gas/GasReadingsPage'
 import GasHistoryPage from './pages/gas/GasHistoryPage'
 import GasAnalyticsPage from './pages/gas/GasAnalyticsPage'
 import { useTheme } from './hooks/useTheme'
-import BackupReminder from './components/ui/BackupReminder'
 
 export default function App() {
   useTheme()
-
-  useEffect(() => {
-    if (navigator.storage && navigator.storage.persist) {
-      navigator.storage.persist()
-    }
-  }, [])
 
   return (
     <>
@@ -64,7 +56,6 @@ export default function App() {
           <Route path="/analytics" element={<Navigate to="/electricity/analytics" replace />} />
         </Route>
       </Routes>
-      <BackupReminder />
     </>
   )
 }
