@@ -7,6 +7,8 @@ import { exportToJSON, importFromJSON } from '../utils/export'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Modal from '../components/ui/Modal'
+import { format } from 'date-fns'
+import { ru } from 'date-fns/locale'
 import { CURRENCY } from '../constants'
 
 export default function SettingsPage() {
@@ -22,6 +24,7 @@ export default function SettingsPage() {
   const [showClear, setShowClear] = useState(false)
   const [importMsg, setImportMsg] = useState('')
   const fileRef = useRef(null)
+  const [lastBackup, setLastBackup] = useState(() => localStorage.getItem('electro-last-backup'))
 
   const handleTariffSave = () => {
     const t1 = parseFloat(t1Rate)
@@ -35,6 +38,9 @@ export default function SettingsPage() {
   const handleExport = () => {
     const settings = useSettingsStore.getState()
     exportToJSON(readings, settings)
+    const now = new Date().toISOString()
+    localStorage.setItem('electro-last-backup', now)
+    setLastBackup(now)
   }
 
   const handleImport = async (e) => {
@@ -138,7 +144,10 @@ export default function SettingsPage() {
       {/* Data Management */}
       <Card className="p-5">
         <h3 className="text-sm font-semibold text-primary mb-3">Данные</h3>
-        <p className="text-xs text-muted mb-4">Всего записей: {readings.length}</p>
+        <div className="text-xs text-muted mb-4 space-y-1">
+          <p>Всего записей: {readings.length}</p>
+          <p>Последний бэкап: {lastBackup ? format(new Date(lastBackup), 'd MMM yyyy, HH:mm', { locale: ru }) : 'не выполнялся'}</p>
+        </div>
 
         <div className="space-y-2">
           <Button variant="secondary" size="sm" onClick={handleExport} className="w-full">
