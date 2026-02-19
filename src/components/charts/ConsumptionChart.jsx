@@ -19,11 +19,12 @@ function CustomTooltip({ active, payload, label }) {
   )
 }
 
-export default function ConsumptionChart({ data }) {
+export default function ConsumptionChart({ data, singleZone = false }) {
   const chartData = data.map(r => ({
     name: format(parseISO(r.date), 'd MMM', { locale: ru }),
     'T1 (день)': r.t1Consumption,
     'T2 (ночь)': r.t2Consumption,
+    'Потребление': +(r.t1Consumption + r.t2Consumption).toFixed(2),
   }))
 
   return (
@@ -48,8 +49,14 @@ export default function ConsumptionChart({ data }) {
           iconType="circle"
           iconSize={8}
         />
-        <Bar dataKey="T1 (день)" fill={CHART_COLORS.day} radius={[4, 4, 0, 0]} maxBarSize={24} />
-        <Bar dataKey="T2 (ночь)" fill={CHART_COLORS.night} radius={[4, 4, 0, 0]} maxBarSize={24} />
+        {singleZone ? (
+          <Bar dataKey="Потребление" fill={CHART_COLORS.total} radius={[4, 4, 0, 0]} maxBarSize={24} />
+        ) : (
+          <>
+            <Bar dataKey="T1 (день)" fill={CHART_COLORS.day} radius={[4, 4, 0, 0]} maxBarSize={24} />
+            <Bar dataKey="T2 (ночь)" fill={CHART_COLORS.night} radius={[4, 4, 0, 0]} maxBarSize={24} />
+          </>
+        )}
       </BarChart>
     </ResponsiveContainer>
   )

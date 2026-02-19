@@ -15,6 +15,8 @@ export default function ReadingsPage() {
   const getLastReading = useReadingsStore(s => s.getLastReading)
   const getPrevReadingForDate = useReadingsStore(s => s.getPrevReadingForDate)
   const currentTariff = useSettingsStore(s => s.currentTariff)
+  const meterType = useSettingsStore(s => s.meterType)
+  const isSingle = meterType === 'single'
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [t1Input, setT1Input] = useState('')
@@ -26,15 +28,17 @@ export default function ReadingsPage() {
   const prevReading = useMemo(() => getPrevReadingForDate(date), [date, readings])
 
   const preview = useMemo(() => {
-    if (!t1Input && !t2Input) return null
-    return previewCalculation(t1Input, t2Input, prevReading, currentTariff)
-  }, [t1Input, t2Input, prevReading, currentTariff])
+    if (!t1Input) return null
+    const t2 = isSingle ? '0' : t2Input
+    return previewCalculation(t1Input, t2, prevReading, currentTariff)
+  }, [t1Input, t2Input, prevReading, currentTariff, isSingle])
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault()
 
-    const formData = { date, t1Reading: t1Input, t2Reading: t2Input }
-    const validation = validateReading(formData, prevReading, readings)
+    const t2 = isSingle ? '0' : t2Input
+    const formData = { date, t1Reading: t1Input, t2Reading: t2 }
+    const validation = validateReading(formData, prevReading, readings, null, meterType)
 
     if (!validation.isValid) {
       setErrors(validation.errors)
@@ -47,7 +51,7 @@ export default function ReadingsPage() {
     setErrors({})
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
-  }, [date, t1Input, t2Input, prevReading, readings, currentTariff, addReading])
+  }, [date, t1Input, t2Input, prevReading, readings, currentTariff, addReading, isSingle, meterType])
 
   return (
     <motion.div
@@ -67,65 +71,99 @@ export default function ReadingsPage() {
         {errors.date && <p className="text-danger text-sm mt-1">{errors.date}</p>}
       </Card>
 
-      {/* T1 Input */}
-      <Card className="p-5 border-l-4 border-l-day-400">
-        <div className="flex items-center gap-2 mb-3">
-          <Sun className="w-5 h-5 text-day-500" />
-          <span className="font-semibold text-primary">T1 — Дневной тариф</span>
-          <span className="text-xs text-muted ml-auto">{currentTariff.t1Rate} {CURRENCY}/кВт·ч</span>
-        </div>
-        {prevReading && (
-          <p className="text-xs text-muted mb-2">
-            Предыдущее показание: <span className="font-mono text-secondary">{prevReading.t1Reading}</span>
-          </p>
-        )}
-        <input
-          type="number"
-          step="0.01"
-          value={t1Input}
-          onChange={e => { setT1Input(e.target.value); setErrors(prev => ({ ...prev, t1: undefined })) }}
-          placeholder={prevReading ? `>= ${prevReading.t1Reading}` : '0.00'}
-          className="w-full bg-tertiary border border-themed rounded-xl px-4 py-3 font-mono text-xl text-primary placeholder:text-muted focus:border-day-400 focus:ring-1 focus:ring-day-400 outline-none transition-colors"
-        />
-        {errors.t1 && <p className="text-danger text-sm mt-1">{errors.t1}</p>}
-        {preview && prevReading && (
-          <div className="mt-2 text-sm">
-            <span className="text-day-500 font-mono">+{preview.t1Consumption} кВт·ч</span>
-            <span className="text-muted mx-2">=</span>
-            <span className="text-primary font-mono">{CURRENCY}{preview.t1Cost}</span>
+      {isSingle ? (
+        /* Single zone input */
+        <Card className="p-5 border-l-4 border-l-electric-500">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="w-5 h-5 text-electric-500" />
+            <span className="font-semibold text-primary">Показание счётчика</span>
+            <span className="text-xs text-muted ml-auto">{currentTariff.t1Rate} {CURRENCY}/кВт·ч</span>
           </div>
-        )}
-      </Card>
+          {prevReading && (
+            <p className="text-xs text-muted mb-2">
+              Предыдущее показание: <span className="font-mono text-secondary">{prevReading.t1Reading}</span>
+            </p>
+          )}
+          <input
+            type="number"
+            step="0.01"
+            value={t1Input}
+            onChange={e => { setT1Input(e.target.value); setErrors(prev => ({ ...prev, t1: undefined })) }}
+            placeholder={prevReading ? `>= ${prevReading.t1Reading}` : '0.00'}
+            className="w-full bg-tertiary border border-themed rounded-xl px-4 py-3 font-mono text-xl text-primary placeholder:text-muted focus:border-electric-500 focus:ring-1 focus:ring-electric-500 outline-none transition-colors"
+          />
+          {errors.t1 && <p className="text-danger text-sm mt-1">{errors.t1}</p>}
+          {preview && prevReading && (
+            <div className="mt-2 text-sm">
+              <span className="text-electric-500 font-mono">+{preview.t1Consumption} кВт·ч</span>
+              <span className="text-muted mx-2">=</span>
+              <span className="text-primary font-mono">{CURRENCY}{preview.totalCost}</span>
+            </div>
+          )}
+        </Card>
+      ) : (
+        <>
+          {/* T1 Input */}
+          <Card className="p-5 border-l-4 border-l-day-400">
+            <div className="flex items-center gap-2 mb-3">
+              <Sun className="w-5 h-5 text-day-500" />
+              <span className="font-semibold text-primary">T1 — Дневной тариф</span>
+              <span className="text-xs text-muted ml-auto">{currentTariff.t1Rate} {CURRENCY}/кВт·ч</span>
+            </div>
+            {prevReading && (
+              <p className="text-xs text-muted mb-2">
+                Предыдущее показание: <span className="font-mono text-secondary">{prevReading.t1Reading}</span>
+              </p>
+            )}
+            <input
+              type="number"
+              step="0.01"
+              value={t1Input}
+              onChange={e => { setT1Input(e.target.value); setErrors(prev => ({ ...prev, t1: undefined })) }}
+              placeholder={prevReading ? `>= ${prevReading.t1Reading}` : '0.00'}
+              className="w-full bg-tertiary border border-themed rounded-xl px-4 py-3 font-mono text-xl text-primary placeholder:text-muted focus:border-day-400 focus:ring-1 focus:ring-day-400 outline-none transition-colors"
+            />
+            {errors.t1 && <p className="text-danger text-sm mt-1">{errors.t1}</p>}
+            {preview && prevReading && (
+              <div className="mt-2 text-sm">
+                <span className="text-day-500 font-mono">+{preview.t1Consumption} кВт·ч</span>
+                <span className="text-muted mx-2">=</span>
+                <span className="text-primary font-mono">{CURRENCY}{preview.t1Cost}</span>
+              </div>
+            )}
+          </Card>
 
-      {/* T2 Input */}
-      <Card className="p-5 border-l-4 border-l-night-500">
-        <div className="flex items-center gap-2 mb-3">
-          <Moon className="w-5 h-5 text-night-500" />
-          <span className="font-semibold text-primary">T2 — Ночной тариф</span>
-          <span className="text-xs text-muted ml-auto">{currentTariff.t2Rate} {CURRENCY}/кВт·ч</span>
-        </div>
-        {prevReading && (
-          <p className="text-xs text-muted mb-2">
-            Предыдущее показание: <span className="font-mono text-secondary">{prevReading.t2Reading}</span>
-          </p>
-        )}
-        <input
-          type="number"
-          step="0.01"
-          value={t2Input}
-          onChange={e => { setT2Input(e.target.value); setErrors(prev => ({ ...prev, t2: undefined })) }}
-          placeholder={prevReading ? `>= ${prevReading.t2Reading}` : '0.00'}
-          className="w-full bg-tertiary border border-themed rounded-xl px-4 py-3 font-mono text-xl text-primary placeholder:text-muted focus:border-night-500 focus:ring-1 focus:ring-night-500 outline-none transition-colors"
-        />
-        {errors.t2 && <p className="text-danger text-sm mt-1">{errors.t2}</p>}
-        {preview && prevReading && (
-          <div className="mt-2 text-sm">
-            <span className="text-night-500 font-mono">+{preview.t2Consumption} кВт·ч</span>
-            <span className="text-muted mx-2">=</span>
-            <span className="text-primary font-mono">{CURRENCY}{preview.t2Cost}</span>
-          </div>
-        )}
-      </Card>
+          {/* T2 Input */}
+          <Card className="p-5 border-l-4 border-l-night-500">
+            <div className="flex items-center gap-2 mb-3">
+              <Moon className="w-5 h-5 text-night-500" />
+              <span className="font-semibold text-primary">T2 — Ночной тариф</span>
+              <span className="text-xs text-muted ml-auto">{currentTariff.t2Rate} {CURRENCY}/кВт·ч</span>
+            </div>
+            {prevReading && (
+              <p className="text-xs text-muted mb-2">
+                Предыдущее показание: <span className="font-mono text-secondary">{prevReading.t2Reading}</span>
+              </p>
+            )}
+            <input
+              type="number"
+              step="0.01"
+              value={t2Input}
+              onChange={e => { setT2Input(e.target.value); setErrors(prev => ({ ...prev, t2: undefined })) }}
+              placeholder={prevReading ? `>= ${prevReading.t2Reading}` : '0.00'}
+              className="w-full bg-tertiary border border-themed rounded-xl px-4 py-3 font-mono text-xl text-primary placeholder:text-muted focus:border-night-500 focus:ring-1 focus:ring-night-500 outline-none transition-colors"
+            />
+            {errors.t2 && <p className="text-danger text-sm mt-1">{errors.t2}</p>}
+            {preview && prevReading && (
+              <div className="mt-2 text-sm">
+                <span className="text-night-500 font-mono">+{preview.t2Consumption} кВт·ч</span>
+                <span className="text-muted mx-2">=</span>
+                <span className="text-primary font-mono">{CURRENCY}{preview.t2Cost}</span>
+              </div>
+            )}
+          </Card>
+        </>
+      )}
 
       {/* Preview Total */}
       {preview && prevReading && (

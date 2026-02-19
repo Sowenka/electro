@@ -24,6 +24,8 @@ const item = {
 export default function DashboardPage() {
   const readings = useReadingsStore(s => s.readings)
   const currency = useSettingsStore(s => s.currency)
+  const meterType = useSettingsStore(s => s.meterType)
+  const isSingle = meterType === 'single'
   const sorted = useMemo(() => [...readings].sort((a, b) => a.date.localeCompare(b.date)), [readings])
 
   const today = new Date().toISOString().split('T')[0]
@@ -52,40 +54,59 @@ export default function DashboardPage() {
     return sorted.filter(r => r.date >= cutoff)
   }, [sorted])
 
-  const kpis = [
-    {
-      title: 'Сегодня',
-      value: todayConsumption.toFixed(1),
-      unit: 'кВт·ч',
-      subtitle: todayReading ? `${currency}${todayCost.toFixed(2)}` : 'Нет данных',
-      icon: Zap,
-      color: 'electric',
-    },
-    {
-      title: 'За месяц',
-      value: monthTotal.toFixed(1),
-      unit: 'кВт·ч',
-      subtitle: `${monthReadings.length} дн.`,
-      icon: TrendingUp,
-      color: 'electric',
-    },
-    {
-      title: 'T1 (день)',
-      value: monthT1.toFixed(1),
-      unit: 'кВт·ч',
-      subtitle: `${currency}${(monthReadings.reduce((s, r) => s + r.t1Cost, 0)).toFixed(2)}`,
-      icon: Sun,
-      color: 'day',
-    },
-    {
-      title: 'T2 (ночь)',
-      value: monthT2.toFixed(1),
-      unit: 'кВт·ч',
-      subtitle: `${currency}${(monthReadings.reduce((s, r) => s + r.t2Cost, 0)).toFixed(2)}`,
-      icon: Moon,
-      color: 'night',
-    },
-  ]
+  const kpis = isSingle
+    ? [
+        {
+          title: 'Сегодня',
+          value: todayConsumption.toFixed(1),
+          unit: 'кВт·ч',
+          subtitle: todayReading ? `${currency}${todayCost.toFixed(2)}` : 'Нет данных',
+          icon: Zap,
+          color: 'electric',
+        },
+        {
+          title: 'За месяц',
+          value: monthTotal.toFixed(1),
+          unit: 'кВт·ч',
+          subtitle: `${monthReadings.length} дн.`,
+          icon: TrendingUp,
+          color: 'electric',
+        },
+      ]
+    : [
+        {
+          title: 'Сегодня',
+          value: todayConsumption.toFixed(1),
+          unit: 'кВт·ч',
+          subtitle: todayReading ? `${currency}${todayCost.toFixed(2)}` : 'Нет данных',
+          icon: Zap,
+          color: 'electric',
+        },
+        {
+          title: 'За месяц',
+          value: monthTotal.toFixed(1),
+          unit: 'кВт·ч',
+          subtitle: `${monthReadings.length} дн.`,
+          icon: TrendingUp,
+          color: 'electric',
+        },
+        {
+          title: 'T1 (день)',
+          value: monthT1.toFixed(1),
+          unit: 'кВт·ч',
+          subtitle: `${currency}${(monthReadings.reduce((s, r) => s + r.t1Cost, 0)).toFixed(2)}`,
+          icon: Sun,
+          color: 'day',
+        },
+        {
+          title: 'T2 (ночь)',
+          value: monthT2.toFixed(1),
+          unit: 'кВт·ч',
+          subtitle: `${currency}${(monthReadings.reduce((s, r) => s + r.t2Cost, 0)).toFixed(2)}`,
+          icon: Moon,
+          color: 'night',
+        },
+      ]
 
   if (sorted.length === 0) {
     return (
@@ -110,7 +131,7 @@ export default function DashboardPage() {
   return (
     <motion.div variants={container} initial="hidden" animate="visible" className="space-y-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+      <div className={`grid gap-3 lg:gap-4 ${isSingle ? 'grid-cols-2' : 'grid-cols-2 lg:grid-cols-4'}`}>
         {kpis.map((kpi, i) => (
           <motion.div key={i} variants={item}>
             <KpiCard {...kpi} currency={currency} />
@@ -128,27 +149,31 @@ export default function DashboardPage() {
           <p className="text-3xl lg:text-4xl font-bold text-primary">
             {currency}{monthCost.toFixed(2)}
           </p>
-          <div className="flex gap-4 mt-2 text-sm">
-            <span className="text-day-500">T1: {currency}{monthReadings.reduce((s, r) => s + r.t1Cost, 0).toFixed(2)}</span>
-            <span className="text-night-500">T2: {currency}{monthReadings.reduce((s, r) => s + r.t2Cost, 0).toFixed(2)}</span>
-          </div>
+          {!isSingle && (
+            <div className="flex gap-4 mt-2 text-sm">
+              <span className="text-day-500">T1: {currency}{monthReadings.reduce((s, r) => s + r.t1Cost, 0).toFixed(2)}</span>
+              <span className="text-night-500">T2: {currency}{monthReadings.reduce((s, r) => s + r.t2Cost, 0).toFixed(2)}</span>
+            </div>
+          )}
         </Card>
       </motion.div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <motion.div variants={item} className="lg:col-span-2">
+      <div className={`grid grid-cols-1 gap-4 ${!isSingle ? 'lg:grid-cols-3' : ''}`}>
+        <motion.div variants={item} className={!isSingle ? 'lg:col-span-2' : ''}>
           <Card className="p-4 lg:p-5">
             <h3 className="text-sm font-semibold text-primary mb-4">Потребление за 30 дней</h3>
-            <ConsumptionChart data={last30} />
+            <ConsumptionChart data={last30} singleZone={isSingle} />
           </Card>
         </motion.div>
-        <motion.div variants={item}>
-          <Card className="p-4 lg:p-5">
-            <h3 className="text-sm font-semibold text-primary mb-4">День / Ночь</h3>
-            <TariffPieChart t1={monthT1} t2={monthT2} />
-          </Card>
-        </motion.div>
+        {!isSingle && (
+          <motion.div variants={item}>
+            <Card className="p-4 lg:p-5">
+              <h3 className="text-sm font-semibold text-primary mb-4">День / Ночь</h3>
+              <TariffPieChart t1={monthT1} t2={monthT2} />
+            </Card>
+          </motion.div>
+        )}
       </div>
 
       {/* Cost Chart */}
@@ -173,8 +198,8 @@ export default function DashboardPage() {
               <thead>
                 <tr className="border-b border-themed">
                   <th className="text-left py-2 px-3 text-xs font-semibold text-muted uppercase">Дата</th>
-                  <th className="text-right py-2 px-3 text-xs font-semibold text-muted uppercase">T1</th>
-                  <th className="text-right py-2 px-3 text-xs font-semibold text-muted uppercase">T2</th>
+                  {!isSingle && <th className="text-right py-2 px-3 text-xs font-semibold text-muted uppercase">T1</th>}
+                  {!isSingle && <th className="text-right py-2 px-3 text-xs font-semibold text-muted uppercase">T2</th>}
                   <th className="text-right py-2 px-3 text-xs font-semibold text-muted uppercase">Расход</th>
                   <th className="text-right py-2 px-3 text-xs font-semibold text-muted uppercase">Сумма</th>
                 </tr>
@@ -185,12 +210,16 @@ export default function DashboardPage() {
                     <td className="py-2.5 px-3 text-primary">
                       {format(parseISO(r.date), 'd MMM', { locale: ru })}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono text-day-500">
-                      +{r.t1Consumption}
-                    </td>
-                    <td className="py-2.5 px-3 text-right font-mono text-night-500">
-                      +{r.t2Consumption}
-                    </td>
+                    {!isSingle && (
+                      <td className="py-2.5 px-3 text-right font-mono text-day-500">
+                        +{r.t1Consumption}
+                      </td>
+                    )}
+                    {!isSingle && (
+                      <td className="py-2.5 px-3 text-right font-mono text-night-500">
+                        +{r.t2Consumption}
+                      </td>
+                    )}
                     <td className="py-2.5 px-3 text-right font-mono text-primary">
                       {(r.t1Consumption + r.t2Consumption).toFixed(1)}
                     </td>

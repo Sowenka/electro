@@ -15,6 +15,8 @@ export default function HistoryPage() {
   const readings = useReadingsStore(s => s.readings)
   const deleteReading = useReadingsStore(s => s.deleteReading)
   const settings = useSettingsStore()
+  const meterType = useSettingsStore(s => s.meterType)
+  const isSingle = meterType === 'single'
 
   const [monthFilter, setMonthFilter] = useState('')
   const [deleteId, setDeleteId] = useState(null)
@@ -90,28 +92,47 @@ export default function HistoryPage() {
 
       {/* Summary */}
       <Card className="p-4">
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 text-center">
-          <div>
-            <p className="text-xs text-muted mb-1">Записей</p>
-            <p className="text-lg font-bold text-primary">{filtered.length}</p>
+        {isSingle ? (
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <p className="text-xs text-muted mb-1">Записей</p>
+              <p className="text-lg font-bold text-primary">{filtered.length}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted mb-1">Расход</p>
+              <p className="text-lg font-bold text-electric-500">
+                {(totals.t1Consumption + totals.t2Consumption).toFixed(1)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted mb-1">Итого</p>
+              <p className="text-lg font-bold text-primary">{CURRENCY}{totals.totalCost.toFixed(2)}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-muted mb-1">T1 расход</p>
-            <p className="text-lg font-bold text-day-500">{totals.t1Consumption.toFixed(1)}</p>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 text-center">
+            <div>
+              <p className="text-xs text-muted mb-1">Записей</p>
+              <p className="text-lg font-bold text-primary">{filtered.length}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted mb-1">T1 расход</p>
+              <p className="text-lg font-bold text-day-500">{totals.t1Consumption.toFixed(1)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted mb-1">T2 расход</p>
+              <p className="text-lg font-bold text-night-500">{totals.t2Consumption.toFixed(1)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted mb-1">T1 стоимость</p>
+              <p className="text-lg font-bold text-day-500">{CURRENCY}{totals.t1Cost.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted mb-1">Итого</p>
+              <p className="text-lg font-bold text-primary">{CURRENCY}{totals.totalCost.toFixed(2)}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-muted mb-1">T2 расход</p>
-            <p className="text-lg font-bold text-night-500">{totals.t2Consumption.toFixed(1)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-1">T1 стоимость</p>
-            <p className="text-lg font-bold text-day-500">{CURRENCY}{totals.t1Cost.toFixed(2)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted mb-1">Итого</p>
-            <p className="text-lg font-bold text-primary">{CURRENCY}{totals.totalCost.toFixed(2)}</p>
-          </div>
-        </div>
+        )}
       </Card>
 
       {/* Table */}
@@ -122,15 +143,27 @@ export default function HistoryPage() {
               <tr className="border-b border-themed bg-tertiary">
                 <th className="text-left py-3 px-4 text-xs font-semibold text-muted uppercase">Дата</th>
                 <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase">
-                  <span className="flex items-center justify-end gap-1"><Sun className="w-3 h-3" /> T1</span>
+                  {isSingle
+                    ? 'Показание'
+                    : <span className="flex items-center justify-end gap-1"><Sun className="w-3 h-3" /> T1</span>}
                 </th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase">
-                  <span className="flex items-center justify-end gap-1"><Moon className="w-3 h-3" /> T2</span>
-                </th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase hidden md:table-cell">T1 кВт</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase hidden md:table-cell">T2 кВт</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase hidden lg:table-cell">T1 {CURRENCY}</th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase hidden lg:table-cell">T2 {CURRENCY}</th>
+                {!isSingle && (
+                  <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase">
+                    <span className="flex items-center justify-end gap-1"><Moon className="w-3 h-3" /> T2</span>
+                  </th>
+                )}
+                {isSingle
+                  ? <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase hidden md:table-cell">Расход кВт</th>
+                  : <>
+                      <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase hidden md:table-cell">T1 кВт</th>
+                      <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase hidden md:table-cell">T2 кВт</th>
+                    </>}
+                {!isSingle && (
+                  <>
+                    <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase hidden lg:table-cell">T1 {CURRENCY}</th>
+                    <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase hidden lg:table-cell">T2 {CURRENCY}</th>
+                  </>
+                )}
                 <th className="text-right py-3 px-4 text-xs font-semibold text-muted uppercase">Итого</th>
                 <th className="py-3 px-4 w-10"></th>
               </tr>
@@ -142,11 +175,19 @@ export default function HistoryPage() {
                     {format(parseISO(r.date), 'd MMM yyyy', { locale: ru })}
                   </td>
                   <td className="py-3 px-4 text-right font-mono text-primary">{r.t1Reading}</td>
-                  <td className="py-3 px-4 text-right font-mono text-primary">{r.t2Reading}</td>
-                  <td className="py-3 px-4 text-right font-mono text-day-500 hidden md:table-cell">+{r.t1Consumption}</td>
-                  <td className="py-3 px-4 text-right font-mono text-night-500 hidden md:table-cell">+{r.t2Consumption}</td>
-                  <td className="py-3 px-4 text-right font-mono text-day-500 hidden lg:table-cell">{r.t1Cost.toFixed(2)}</td>
-                  <td className="py-3 px-4 text-right font-mono text-night-500 hidden lg:table-cell">{r.t2Cost.toFixed(2)}</td>
+                  {!isSingle && <td className="py-3 px-4 text-right font-mono text-primary">{r.t2Reading}</td>}
+                  {isSingle
+                    ? <td className="py-3 px-4 text-right font-mono text-electric-500 hidden md:table-cell">+{r.t1Consumption}</td>
+                    : <>
+                        <td className="py-3 px-4 text-right font-mono text-day-500 hidden md:table-cell">+{r.t1Consumption}</td>
+                        <td className="py-3 px-4 text-right font-mono text-night-500 hidden md:table-cell">+{r.t2Consumption}</td>
+                      </>}
+                  {!isSingle && (
+                    <>
+                      <td className="py-3 px-4 text-right font-mono text-day-500 hidden lg:table-cell">{r.t1Cost.toFixed(2)}</td>
+                      <td className="py-3 px-4 text-right font-mono text-night-500 hidden lg:table-cell">{r.t2Cost.toFixed(2)}</td>
+                    </>
+                  )}
                   <td className="py-3 px-4 text-right font-mono font-semibold text-primary">{CURRENCY}{r.totalCost.toFixed(2)}</td>
                   <td className="py-3 px-2">
                     <button

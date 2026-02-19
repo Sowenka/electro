@@ -7,6 +7,7 @@ const useSettingsStore = create(
     (set, get) => ({
       theme: 'dark',
       currency: '\u20BD',
+      meterType: 'two-zone',
       currentTariff: { ...DEFAULT_TARIFF },
       tariffHistory: [],
 
@@ -25,6 +26,8 @@ const useSettingsStore = create(
 
       setTheme: (theme) => set({ theme }),
 
+      setMeterType: (meterType) => set({ meterType }),
+
       getTariffForDate: (dateStr) => {
         const { tariffHistory, currentTariff } = get()
         if (!tariffHistory.length) return currentTariff
@@ -39,6 +42,7 @@ const useSettingsStore = create(
       importSettings: (data) => set({
         currentTariff: data.currentTariff || DEFAULT_TARIFF,
         tariffHistory: data.tariffHistory || [],
+        meterType: data.meterType || 'two-zone',
       }),
     }),
     {

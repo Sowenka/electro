@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Sun, Moon, Monitor, Save, Download, Upload, Trash2, AlertCircle, Check, Zap } from 'lucide-react'
+import { Sun, Moon, Monitor, Save, Download, Upload, Trash2, AlertCircle, Check, Zap, Gauge } from 'lucide-react'
 import useSettingsStore from '../store/useSettingsStore'
 import useReadingsStore from '../store/useReadingsStore'
 import { exportToJSON, importFromJSON } from '../utils/export'
@@ -12,7 +12,7 @@ import { ru } from 'date-fns/locale'
 import { CURRENCY } from '../constants'
 
 export default function SettingsPage() {
-  const { theme, setTheme, currentTariff, updateTariff, tariffHistory } = useSettingsStore()
+  const { theme, setTheme, currentTariff, updateTariff, tariffHistory, meterType, setMeterType } = useSettingsStore()
   const readings = useReadingsStore(s => s.readings)
   const importReadings = useReadingsStore(s => s.importReadings)
   const clearReadings = useReadingsStore(s => s.clearReadings)
@@ -26,11 +26,18 @@ export default function SettingsPage() {
   const fileRef = useRef(null)
   const [lastBackup, setLastBackup] = useState(() => localStorage.getItem('electro-last-backup'))
 
+  const isSingle = meterType === 'single'
+
   const handleTariffSave = () => {
     const t1 = parseFloat(t1Rate)
-    const t2 = parseFloat(t2Rate)
-    if (isNaN(t1) || isNaN(t2) || t1 <= 0 || t2 <= 0) return
-    updateTariff(t1, t2)
+    if (isNaN(t1) || t1 <= 0) return
+    if (!isSingle) {
+      const t2 = parseFloat(t2Rate)
+      if (isNaN(t2) || t2 <= 0) return
+      updateTariff(t1, t2)
+    } else {
+      updateTariff(t1, 0)
+    }
     setTariffSaved(true)
     setTimeout(() => setTariffSaved(false), 2000)
   }
@@ -72,6 +79,38 @@ export default function SettingsPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-lg mx-auto space-y-4">
+      {/* Meter Type */}
+      <Card className="p-5">
+        <h3 className="text-sm font-semibold text-primary mb-3">Тип счётчика</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setMeterType('single')}
+            className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+              isSingle
+                ? 'bg-electric-500/10 text-electric-500 border border-electric-500/30'
+                : 'bg-tertiary text-secondary hover:text-primary border border-transparent'
+            }`}
+          >
+            <Gauge className="w-5 h-5" />
+            <span className="text-xs font-medium text-center">Однозонный</span>
+          </button>
+          <button
+            onClick={() => setMeterType('two-zone')}
+            className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all ${
+              !isSingle
+                ? 'bg-electric-500/10 text-electric-500 border border-electric-500/30'
+                : 'bg-tertiary text-secondary hover:text-primary border border-transparent'
+            }`}
+          >
+            <div className="flex gap-1">
+              <Sun className="w-4 h-4" />
+              <Moon className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-medium text-center">Двухзонный (T1/T2)</span>
+          </button>
+        </div>
+      </Card>
+
       {/* Theme */}
       <Card className="p-5">
         <h3 className="text-sm font-semibold text-primary mb-3">Тема оформления</h3>
@@ -96,10 +135,10 @@ export default function SettingsPage() {
       {/* Tariff */}
       <Card className="p-5">
         <h3 className="text-sm font-semibold text-primary mb-3">Тарифы</h3>
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div>
+        {isSingle ? (
+          <div className="mb-4">
             <label className="flex items-center gap-1.5 text-xs text-muted mb-1.5">
-              <Sun className="w-3.5 h-3.5 text-day-500" /> T1 (день), {CURRENCY}/кВт·ч
+              <Zap className="w-3.5 h-3.5 text-electric-500" /> Тариф, {CURRENCY}/кВт·ч
             </label>
             <input
               type="number"
@@ -109,21 +148,36 @@ export default function SettingsPage() {
               className="w-full bg-tertiary border border-themed rounded-xl px-3 py-2.5 font-mono text-primary focus:border-electric-500 focus:ring-1 focus:ring-electric-500 outline-none"
             />
           </div>
-          <div>
-            <label className="flex items-center gap-1.5 text-xs text-muted mb-1.5">
-              <Moon className="w-3.5 h-3.5 text-night-500" /> T2 (ночь), {CURRENCY}/кВт·ч
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={t2Rate}
-              onChange={e => setT2Rate(e.target.value)}
-              className="w-full bg-tertiary border border-themed rounded-xl px-3 py-2.5 font-mono text-primary focus:border-electric-500 focus:ring-1 focus:ring-electric-500 outline-none"
-            />
+        ) : (
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-muted mb-1.5">
+                <Sun className="w-3.5 h-3.5 text-day-500" /> T1 (день), {CURRENCY}/кВт·ч
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={t1Rate}
+                onChange={e => setT1Rate(e.target.value)}
+                className="w-full bg-tertiary border border-themed rounded-xl px-3 py-2.5 font-mono text-primary focus:border-electric-500 focus:ring-1 focus:ring-electric-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs text-muted mb-1.5">
+                <Moon className="w-3.5 h-3.5 text-night-500" /> T2 (ночь), {CURRENCY}/кВт·ч
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={t2Rate}
+                onChange={e => setT2Rate(e.target.value)}
+                className="w-full bg-tertiary border border-themed rounded-xl px-3 py-2.5 font-mono text-primary focus:border-electric-500 focus:ring-1 focus:ring-electric-500 outline-none"
+              />
+            </div>
           </div>
-        </div>
+        )}
         <Button onClick={handleTariffSave} size="sm">
-          {tariffSaved ? <><Check className="w-4 h-4" /> Сохранено</> : <><Save className="w-4 h-4" /> Сохранить тарифы</>}
+          {tariffSaved ? <><Check className="w-4 h-4" /> Сохранено</> : <><Save className="w-4 h-4" /> Сохранить тариф</>}
         </Button>
 
         {tariffHistory.length > 0 && (
@@ -133,7 +187,9 @@ export default function SettingsPage() {
               {tariffHistory.slice(-5).reverse().map(p => (
                 <div key={p.id} className="flex items-center justify-between text-xs">
                   <span className="text-secondary">{p.startDate}</span>
-                  <span className="font-mono text-primary">T1: {p.t1Rate} / T2: {p.t2Rate}</span>
+                  <span className="font-mono text-primary">
+                    {p.t2Rate > 0 ? `T1: ${p.t1Rate} / T2: ${p.t2Rate}` : `${p.t1Rate} ${CURRENCY}/кВт·ч`}
+                  </span>
                 </div>
               ))}
             </div>
@@ -189,7 +245,7 @@ export default function SettingsPage() {
           </div>
         </div>
         <p className="text-xs text-secondary">
-          Учёт показаний двухзонного электросчетчика. Данные хранятся локально в вашем браузере.
+          Учёт показаний электросчётчика. Данные хранятся локально в вашем браузере.
         </p>
       </Card>
 
